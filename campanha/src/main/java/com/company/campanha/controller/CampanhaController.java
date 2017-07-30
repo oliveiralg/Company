@@ -4,13 +4,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.company.campanha.models.Campanha;
+import com.company.campanha.models.ClienteCampanha;
 import com.company.campanha.repositories.CampanhaRepository;
+import com.company.campanha.repositories.ClienteCampanhaRepository;
 
 @RestController
 @RequestMapping("/campanha")
@@ -19,16 +22,41 @@ public class CampanhaController {
   @Autowired
   CampanhaRepository campanhaRepository;
 
+  @Autowired
+  ClienteCampanhaRepository clienteCampanhaRepository;
+
   /**
    * GET /create --> Cria uma nova campanha e salva no banco
    */
   @RequestMapping("/create")
-  public Map<String, Object> create(Campanha campanha) {
-    campanha = campanhaRepository.save(campanha);
+  public Map<String, Object> create(Campanha novaCampanha) {
+    // Pega lista de campanhas vigentes no período da nova campanha
+    List<Campanha> lista = campanhaRepository.findByVigencia(novaCampanha.getVigenciaInicio(),
+        novaCampanha.getVigenciaFim());
+    // Adiciona nova campanha
+    novaCampanha = campanhaRepository.save(novaCampanha);
+    // Percorre lista para adicionar novo dia no final
+    for (Campanha campanha : lista) {
+      // Acrescenta um dia
+      campanha.setVigenciaFim(campanha.getVigenciaFim().plusDays(1));
+      // Enquanto houver campanha com o mesmo dia final, acresecenta mais um dia
+      while (!campanhaRepository.findByVigenciaFim(campanha.getVigenciaFim(), LocalDate.now())
+          .isEmpty())
+        campanha.setVigenciaFim(campanha.getVigenciaFim().plusDays(1));
+      campanhaRepository.save(campanha);
+      // Pega lista de clientes que enquadram na campanha
+      List<ClienteCampanha> listaClienteCampanha =
+          clienteCampanhaRepository.findByCampanhaId(campanha.getId());
+      for (ClienteCampanha clienteCampanha : listaClienteCampanha) {
+        // Seta que alterou para modificar cliente
+        clienteCampanha.setAlterou(true);
+        clienteCampanhaRepository.save(clienteCampanha);
+      }
+    }
     Map<String, Object> dataMap = new HashMap<String, Object>();
     dataMap.put("message", "Campanha criada com sucesso");
     dataMap.put("status", "1");
-    dataMap.put("campanha", campanha);
+    dataMap.put("campanha", novaCampanha);
     return dataMap;
   }
 

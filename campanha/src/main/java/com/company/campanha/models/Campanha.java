@@ -1,7 +1,7 @@
 package com.company.campanha.models;
 
-import java.util.Date;
 
+import org.joda.time.LocalDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,8 +12,8 @@ public class Campanha {
   String id;
   String nome;
   String timeCoracao;
-  Date vigenciaInicio;
-  Date vigenciaFim;
+  LocalDate vigenciaInicio;
+  LocalDate vigenciaFim;
 
   public String getId() {
     return id;
@@ -39,19 +39,22 @@ public class Campanha {
     this.timeCoracao = timeCoracao;
   }
 
-  public Date getVigenciaInicio() {
+  public LocalDate getVigenciaInicio() {
     return vigenciaInicio;
   }
 
-  public void setVigenciaInicio(Date vigenciaInicio) {
+  public void setVigenciaInicio(LocalDate vigenciaInicio) {
+    LocalDate currentDate = LocalDate.now();
+    if (vigenciaInicio.compareTo(currentDate) < 0)
+      throw new IllegalArgumentException("Data início de vigência menor que data atual");
     this.vigenciaInicio = vigenciaInicio;
   }
 
-  public Date getVigenciaFim() {
+  public LocalDate getVigenciaFim() {
     return vigenciaFim;
   }
 
-  public void setVigenciaFim(Date vigenciaFim) {
+  public void setVigenciaFim(LocalDate vigenciaFim) {
     this.vigenciaFim = vigenciaFim;
   }
 
