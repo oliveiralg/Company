@@ -1,12 +1,18 @@
 package com.company.campanha.controller;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,6 +21,7 @@ import com.company.campanha.models.ClienteCampanha;
 import com.company.campanha.repositories.CampanhaRepository;
 import com.company.campanha.repositories.ClienteCampanhaRepository;
 
+@CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 @RestController
 @RequestMapping("/campanha")
 public class CampanhaController {
@@ -28,25 +35,27 @@ public class CampanhaController {
   /**
    * GET /create --> Cria uma nova campanha e salva no banco
    */
-  @RequestMapping("/create")
-  public Map<String, Object> create(Campanha novaCampanha) {
+  @RequestMapping(value = "/create", method = RequestMethod.POST)
+  public Map<String, Object> create(@RequestBody Campanha campanha) {
     // Pega lista de campanhas vigentes no período da nova campanha
-    List<Campanha> lista = campanhaRepository.findByVigencia(novaCampanha.getVigenciaInicio(),
-        novaCampanha.getVigenciaFim());
+    List<String> ordem = new ArrayList<String>();
+    ordem.add("vigenciaFim");
+    List<Campanha> lista = campanhaRepository.buscaPorVigencia(campanha.getVigenciaInicio(),
+        campanha.getVigenciaFim(), new Sort(Direction.ASC, ordem));
     // Adiciona nova campanha
-    novaCampanha = campanhaRepository.save(novaCampanha);
+    campanha = campanhaRepository.save(campanha);
     // Percorre lista para adicionar novo dia no final
-    for (Campanha campanha : lista) {
+    for (Campanha campanhaExistente : lista) {
       // Acrescenta um dia
-      campanha.setVigenciaFim(campanha.getVigenciaFim().plusDays(1));
+      campanhaExistente.setVigenciaFim(campanhaExistente.getVigenciaFim().plusDays(1));
       // Enquanto houver campanha com o mesmo dia final, acresecenta mais um dia
-      while (!campanhaRepository.findByVigenciaFim(campanha.getVigenciaFim(), LocalDate.now())
-          .isEmpty())
-        campanha.setVigenciaFim(campanha.getVigenciaFim().plusDays(1));
-      campanhaRepository.save(campanha);
+      while (!campanhaRepository
+          .buscaPorVigenciaFim(campanhaExistente.getVigenciaFim(), LocalDate.now()).isEmpty())
+        campanhaExistente.setVigenciaFim(campanhaExistente.getVigenciaFim().plusDays(1));
+      campanhaRepository.save(campanhaExistente);
       // Pega lista de clientes que enquadram na campanha
       List<ClienteCampanha> listaClienteCampanha =
-          clienteCampanhaRepository.findByCampanhaId(campanha.getId());
+          clienteCampanhaRepository.findByCampanhaId(campanhaExistente.getId());
       for (ClienteCampanha clienteCampanha : listaClienteCampanha) {
         // Seta que alterou para modificar cliente
         clienteCampanha.setAlterou(true);
@@ -56,7 +65,7 @@ public class CampanhaController {
     Map<String, Object> dataMap = new HashMap<String, Object>();
     dataMap.put("message", "Campanha criada com sucesso");
     dataMap.put("status", "1");
-    dataMap.put("campanha", novaCampanha);
+    dataMap.put("campanha", campanha);
     return dataMap;
   }
 

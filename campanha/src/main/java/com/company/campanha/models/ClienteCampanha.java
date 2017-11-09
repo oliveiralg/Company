@@ -9,6 +9,12 @@ public class ClienteCampanha {
   String campanhaId;
   boolean alterou;
 
+  public ClienteCampanha(String clienteId, String campanhaId) {
+    super();
+    this.clienteId = clienteId;
+    this.campanhaId = campanhaId;
+  }
+
   public String getClienteId() {
     return clienteId;
   }

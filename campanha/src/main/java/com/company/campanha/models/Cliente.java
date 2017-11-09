@@ -1,8 +1,14 @@
 package com.company.campanha.models;
 
-import org.joda.time.LocalDate;
+import java.time.LocalDate;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 
 @Document
 public class Cliente {
@@ -11,6 +17,8 @@ public class Cliente {
   String id;
   String nome;
   String email;
+  @JsonSerialize(using = ToStringSerializer.class)
+  @JsonDeserialize(using = LocalDateDeserializer.class)
   LocalDate dataNascimento;
   String timeCoracao;
 
